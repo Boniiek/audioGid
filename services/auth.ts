@@ -19,12 +19,14 @@ export const isTokenExpired = (token: string): boolean => {
 // Получает токен и проверяет его валидность
 export const getValidToken = async (): Promise<string | null> => {
   const token = await AsyncStorage.getItem('token');
-  if (!token) return null;
-  
+  if (!token) {
+    return null;
+  }
+
   if (isTokenExpired(token)) {
     await AsyncStorage.removeItem('token');
     return null;
   }
-  
+
   return token;
 };

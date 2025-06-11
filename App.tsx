@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
-import { setupPlayer } from './setupPlayer';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Navigate from './Navigate';
+import { setupPlayer } from './setupPlayer';
 import { ThemeProvider } from './ThemeContext';
 
 const App: React.FC = () => {
@@ -11,10 +13,18 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <Navigate />
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.container}>
+      <ThemeProvider>
+        <Navigate />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default App;

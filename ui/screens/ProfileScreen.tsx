@@ -94,7 +94,7 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
           </TouchableOpacity>
         </View>
 
-        <View style={styles.recentlyVisitedContainer}>
+        {/* <View style={styles.recentlyVisitedContainer}>
           <TouchableOpacity style={styles.recentlyVisitedTitleContainer}>
             <Text style={styles.recentlyVisitedTitle}>
               Недавно вы посещали
@@ -125,7 +125,7 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
               inactiveDotScale={0.6}
             />
           </View>
-        </View>
+        </View> */}
 
         <View style={styles.toolsListContainer}>
           <TouchableOpacity style={styles.listItemFirstContainer} onPress={() => navigation.navigate('History')}>
@@ -282,6 +282,7 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     flexDirection: 'column',
     justifyContent: 'space-between',
+    // justifyContent: 'center',
   },
   listItemFirstContainer: {
     borderBottomWidth: 1,

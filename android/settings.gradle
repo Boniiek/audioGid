@@ -6,3 +6,5 @@ include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')
 include ':react-native-volume-manager'
 project(':react-native-volume-manager').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-volume-manager/android')
+include ':react-native-reanimated'
+project(':react-native-reanimated').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-reanimated/android')

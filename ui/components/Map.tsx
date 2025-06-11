@@ -28,10 +28,6 @@ function Map({ onPositionChange }: Props): React.JSX.Element {
   const requestLocationPermission = async () => {
     YaMap.init('b8022cf4-d327-4c28-aa94-7174b69d808f');
     if (Platform.OS === 'android') {
-      // const currentLocale = await YaMap.getLocale();
-      // console.log('Current locale:', currentLocale);
-      // await YaMap.resetLocale();
-      // console.log('Язык карты сменен на системный');
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
