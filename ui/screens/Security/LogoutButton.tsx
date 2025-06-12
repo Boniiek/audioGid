@@ -32,7 +32,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({ onLogout }) => {
     },
     logoutText: {
       fontSize: 16,
-      color: 'black',
+      color: '#FFFFFF',
     },
   });
 

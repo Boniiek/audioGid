@@ -1,31 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import LogoutButton from './Security/LogoutButton';
-import EditIcon from '../../assets/images/icons/edit-icon.svg';
-import AddPhotoIcon from '../../assets/images/icons/add-photo-icon.svg';
-import { launchImageLibrary } from 'react-native-image-picker';
-import { ImageLibraryOptions } from 'react-native-image-picker';
-import ChevronRight from '../../assets/images/icons/chevron-right-icon.svg';
-import { theme } from '../../theme';
-import Carousel, { Pagination } from 'react-native-snap-carousel';
-import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
+import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
+import AddPhotoIcon from '../../assets/images/icons/add-photo-icon.svg';
+import ChevronRight from '../../assets/images/icons/chevron-right-icon.svg';
+import EditIcon from '../../assets/images/icons/edit-icon.svg';
+import { theme } from '../../theme';
+import LogoutButton from './Security/LogoutButton';
+import LinearGradient from 'react-native-linear-gradient';
 
 interface ProfileScreenProps {
   navigation: any;
   onLogout: () => void;
 }
 
-interface CarouselItem {
-  id: number;
-  imageUrl: string;
-}
+// interface CarouselItem {
+//   id: number;
+//   imageUrl: string;
+// }
 
 function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.Element {
 
   const [avatar, setAvatar] = useState<{ uri: string } | null>(null);
-  const [activeSlide, setActiveSlide] = useState<number>(0);
-  const { width } = useWindowDimensions();
+  // const [activeSlide, setActiveSlide] = useState<number>(0);
+  // const { width } = useWindowDimensions();
   const [user, setUser] = useState<{username: string; email: string} | null>(null);
 
   useEffect(() => {
@@ -38,11 +36,11 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
     loadUser();
   }, []);
 
-  const carouselItems: CarouselItem[] = [
-    { id: 1, imageUrl: 'https://cdn1.flamp.ru/5cfc249baad12b9824c7751ad357724a.jpg' },
-    { id: 2, imageUrl: 'https://picture.portalbilet.ru/origin/b3b680c7-56bc-47d8-87f1-9f67a42398ae.jpeg' },
-    { id: 3, imageUrl: 'https://nnao.ru/wp-content/uploads/2024/02/Chehov-1.jpg' },
-  ];
+  // const carouselItems: CarouselItem[] = [
+  //   { id: 1, imageUrl: 'https://cdn1.flamp.ru/5cfc249baad12b9824c7751ad357724a.jpg' },
+  //   { id: 2, imageUrl: 'https://picture.portalbilet.ru/origin/b3b680c7-56bc-47d8-87f1-9f67a42398ae.jpeg' },
+  //   { id: 3, imageUrl: 'https://nnao.ru/wp-content/uploads/2024/02/Chehov-1.jpg' },
+  // ];
 
   const selectImage = () => {
     const options: ImageLibraryOptions = {
@@ -64,103 +62,107 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
     });
   };
 
-  const renderCarouselItem = ({ item, index }: { item: CarouselItem; index: number }): React.ReactElement => {
-    return (
-      <View style={[styles.carouselItem, { zIndex: carouselItems.length - index }]}>
-        <Image source={{ uri: item.imageUrl }} style={styles.carouselImage} />
-      </View>
-    );
-  };
+  // const renderCarouselItem = ({ item, index }: { item: CarouselItem; index: number }): React.ReactElement => {
+  //   return (
+  //     <View style={[styles.carouselItem, { zIndex: carouselItems.length - index }]}>
+  //       <Image source={{ uri: item.imageUrl }} style={styles.carouselImage} />
+  //     </View>
+  //   );
+  // };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.safeAreaContainer} />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={selectImage}>
-            <View style={styles.photoContainer}>
-              {avatar ? (
-                <Image source={avatar} style={styles.avatar} />
-              ) : (
-                <AddPhotoIcon width={24} height={24} />
-              )}
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.profileUsername}>{user?.username || 'Username'}</Text>
-          <Text style={styles.profileEmail}>{user?.email || 'email'}</Text>
-          <TouchableOpacity style={styles.editProfileContainer}>
-            <EditIcon width={24} height={24}/>
-            <Text style={styles.profileEditText}>Редактировать профиль</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* <View style={styles.recentlyVisitedContainer}>
-          <TouchableOpacity style={styles.recentlyVisitedTitleContainer}>
-            <Text style={styles.recentlyVisitedTitle}>
-              Недавно вы посещали
-            </Text>
-            <ChevronRight width={20} height={20} style={styles.recentlyChevronRight} />
-          </TouchableOpacity>
-          <View style={styles.recentlyVisitedCarouselContainer}>
-            <Carousel
-              data={carouselItems}
-              renderItem={renderCarouselItem}
-              sliderWidth={width}
-              itemWidth={width - 60}
-              layout={'default'}
-              loop={true}
-              autoplay={true}
-              autoplayInterval={5000}
-              onSnapToItem={(index) => setActiveSlide(index)}
-              activeSlideAlignment={'start'}
-              firstItem={0}
-              // inactiveSlideOpacity={0}
-            />
-            <Pagination
-              dotsLength={carouselItems.length}
-              activeDotIndex={activeSlide}
-              containerStyle={styles.paginationContainer}
-              dotStyle={styles.paginationDot}
-              inactiveDotOpacity={0.4}
-              inactiveDotScale={0.6}
-            />
+      <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.containerBackground}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.safeAreaContainer} />
+          <View style={styles.header}>
+            <TouchableOpacity onPress={selectImage}>
+              <View style={styles.photoContainer}>
+                {avatar ? (
+                  <Image source={avatar} style={styles.avatar} />
+                ) : (
+                  <AddPhotoIcon width={24} height={24} />
+                )}
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.profileUsername}>{user?.username || 'Username'}</Text>
+            <Text style={styles.profileEmail}>{user?.email || 'email'}</Text>
+            <TouchableOpacity style={styles.editProfileContainer}>
+              <EditIcon width={24} height={24}/>
+              <Text style={styles.profileEditText}>Редактировать профиль</Text>
+            </TouchableOpacity>
           </View>
-        </View> */}
 
-        <View style={styles.toolsListContainer}>
-          <TouchableOpacity style={styles.listItemFirstContainer} onPress={() => navigation.navigate('History')}>
-            <Text style={styles.listItemText}>История</Text>
-            <ChevronRight width={20} height={20} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Favourites')}>
-            <Text style={styles.listItemText}>Избранное</Text>
-            <ChevronRight width={20} height={20} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Settings')}>
-            <Text style={styles.listItemText}>Настройки</Text>
-            <ChevronRight width={20} height={20} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Subscription')}>
-            <Text style={styles.listItemText}>Управление подпиской</Text>
-            <ChevronRight width={20} height={20} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Support')}>
-            <Text style={styles.listItemText}>Поддержка</Text>
-            <ChevronRight width={20} height={20} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.listItemLastContainer} onPress={() => navigation.navigate('About')}>
-            <Text style={styles.listItemText}>О приложении</Text>
-            <ChevronRight width={20} height={20} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.listItemLastContainer} onPress={() => navigation.navigate('PrivacyPolicy')}>
-            <Text style={styles.listItemText}>Политика конфиденциальности</Text>
-            <ChevronRight width={20} height={20} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.bottomContainer}>
-          <LogoutButton navigation={navigation} onLogout={onLogout} />
-        </View>
-      </ScrollView>
+          {/* <View style={styles.recentlyVisitedContainer}>
+            <TouchableOpacity style={styles.recentlyVisitedTitleContainer}>
+              <Text style={styles.recentlyVisitedTitle}>
+                Недавно вы посещали
+              </Text>
+              <ChevronRight width={20} height={20} style={styles.recentlyChevronRight} />
+            </TouchableOpacity>
+            <View style={styles.recentlyVisitedCarouselContainer}>
+              <Carousel
+                data={carouselItems}
+                renderItem={renderCarouselItem}
+                sliderWidth={width}
+                itemWidth={width - 60}
+                layout={'default'}
+                loop={true}
+                autoplay={true}
+                autoplayInterval={5000}
+                onSnapToItem={(index) => setActiveSlide(index)}
+                activeSlideAlignment={'start'}
+                firstItem={0}
+                // inactiveSlideOpacity={0}
+              />
+              <Pagination
+                dotsLength={carouselItems.length}
+                activeDotIndex={activeSlide}
+                containerStyle={styles.paginationContainer}
+                dotStyle={styles.paginationDot}
+                inactiveDotOpacity={0.4}
+                inactiveDotScale={0.6}
+              />
+            </View>
+          </View> */}
+
+          <View style={styles.toolsListContainer}>
+            <TouchableOpacity style={styles.listItemFirstContainer} onPress={() => navigation.navigate('History')}>
+              <Text style={styles.listItemText}>История</Text>
+              <ChevronRight width={20} height={20} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Favourites')}>
+              <Text style={styles.listItemText}>Избранное</Text>
+              <ChevronRight width={20} height={20} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Settings')}>
+              <Text style={styles.listItemText}>Настройки</Text>
+              <ChevronRight width={20} height={20} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Subscription')}>
+              <Text style={styles.listItemText}>Управление подпиской</Text>
+              <ChevronRight width={20} height={20} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Support')}>
+              <Text style={styles.listItemText}>Поддержка</Text>
+              <ChevronRight width={20} height={20} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('About')}>
+              <Text style={styles.listItemText}>О приложении</Text>
+              <ChevronRight width={20} height={20} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.listItemLastContainer} onPress={() => navigation.navigate('PrivacyPolicy')}>
+              <Text style={styles.listItemText}>Политика конфиденциальности</Text>
+              <ChevronRight width={20} height={20} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.bottomContainer}>
+            <View style={styles.logoutButton}>
+              <LogoutButton navigation={navigation} onLogout={onLogout} />
+            </View>
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -168,7 +170,11 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F7F0',
+  },
+  containerBackground: {
+    flex: 1,
+    justifyContent: 'center',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -176,7 +182,7 @@ const styles = StyleSheet.create({
   safeAreaContainer: {
     position: 'absolute',
     top: 0,
-    backgroundColor: '#F4F4F4',
+    // backgroundColor: '#F4F4F4',
     height: 44,
     width: '100%',
   },
@@ -187,10 +193,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 16,
-    height: 208,
+    // height: 208,
     width: '100%',
     borderBottomRightRadius: 20,
     borderBottomLeftRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   photoContainer: {
     width: 76,
@@ -200,23 +214,35 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   profileUsername: {
     fontFamily: theme.fonts.bold,
-    fontSize: 22,
-    color: theme.colors.text,
+    fontSize: 24,
+    color: '#2E7D32',
     marginTop: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   profileEmail: {
     fontFamily: theme.fonts.regular,
     fontSize: 14,
-    color: theme.colors.text2,
+    color: '#666666',
     marginTop: 4,
   },
   profileEditText: {
     fontFamily: theme.fonts.regular,
     fontSize: 14,
-    color: theme.colors.text,
+    color: '#2E7D32',
+    fontWeight: '500',
   },
   avatar: {
     width: 76,
@@ -228,6 +254,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: 10,
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   recentlyVisitedContainer: {
     marginLeft: 16,
@@ -282,11 +312,18 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     flexDirection: 'column',
     justifyContent: 'space-between',
-    // justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   listItemFirstContainer: {
     borderBottomWidth: 1,
-    borderColor: '#C3C3C3',
+    borderColor: '#E0E0E0',
     paddingBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -296,7 +333,7 @@ const styles = StyleSheet.create({
   },
   listItemContainer: {
     borderBottomWidth: 1,
-    borderColor: '#C3C3C3',
+    borderColor: '#E0E0E0',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -313,9 +350,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   listItemText: {
-    color: theme.colors.text,
+    color: '#2E7D32',
     fontSize: 16,
     fontFamily: theme.fonts.regular,
+    fontWeight: '500',
   },
   bottomContainer: {
     flexDirection: 'column',
@@ -323,6 +361,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 20,
     marginBottom: 20,
+  },
+  logoutButton: {
+    color: '#FFFFFF',
   },
 });
 

@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-shadow */
-/* eslint-disable curly */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -19,7 +17,7 @@ import {
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from 'react-native';
 import RNFS from 'react-native-fs';
 import Geolocation from 'react-native-geolocation-service';
@@ -29,13 +27,16 @@ import TrackPlayer, { Event, usePlaybackState, useProgress } from 'react-native-
 import { VolumeManager } from 'react-native-volume-manager';
 import { Geocoder } from 'react-native-yamap';
 import AIoutlined from '../../assets/images/icons/ai-outlined-icon.svg';
+import ArrowBack from '../../assets/images/icons/arrow_back.svg';
+import ChevronDown from '../../assets/images/icons/chevron_down.svg';
+import ChevronUp from '../../assets/images/icons/chevron_up.svg';
 import Download from '../../assets/images/icons/download.svg';
 import Like from '../../assets/images/icons/like.svg';
-import Line from '../../assets/images/icons/line.svg';
 import Minus15 from '../../assets/images/icons/minus15.svg';
 import Next from '../../assets/images/icons/next.svg';
 import PauseWhite from '../../assets/images/icons/pause-white.svg';
 import PlayWhite from '../../assets/images/icons/play-white.svg';
+import PlaylistIcon from '../../assets/images/icons/playlist.svg';
 import Plus15 from '../../assets/images/icons/plus15.svg';
 import Previous from '../../assets/images/icons/previous.svg';
 import Settings from '../../assets/images/icons/settings.svg';
@@ -46,6 +47,10 @@ import { addToFavorites, isFavorite, removeFromFavorites, saveAudioToHistory } f
 import { theme } from '../../theme';
 import Map from '../components/Map';
 import { ClassTimer, Coordinates } from './test.tsx';
+
+/* eslint-disable @typescript-eslint/no-shadow */
+/* eslint-disable curly */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 Geocoder.init('500f7015-58c8-477a-aa0c-556ea02c2d9e');
 
@@ -70,6 +75,122 @@ interface HomeScreenProps {
   };
 }
 
+const GenerateContentSection = ({ onPress, isLoading }: { onPress: () => void; isLoading: boolean }) => (
+  <View style={styles.generateContentContainer}>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={isLoading}
+      style={styles.generateButton}
+    >
+      <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.generateButtonGradient}>
+        {isLoading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <>
+            <AIoutlined width={24} height={24} />
+            <Text style={styles.generateButtonText}>Начать рассказ</Text>
+          </>
+        )}
+      </LinearGradient>
+    </TouchableOpacity>
+  </View>
+);
+
+const PlaylistItem = React.memo(({ item, index, isCurrent, isPlaying, onPress }: {
+  item: AudioData;
+  index: number;
+  isCurrent: boolean;
+  isPlaying: boolean;
+  onPress: () => void;
+}) => {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.playlistItem,
+        isCurrent && styles.currentTrackItem,
+      ]}
+      onPress={onPress}
+    >
+      <Text style={styles.playlistItemText}>
+        {item.title || `Трек ${index + 1}`}
+      </Text>
+      {isCurrent && (
+        <View style={styles.playingIndicator}>
+          {isPlaying ? (
+            <PauseWhite width={16} height={16} color="#2196F3" />
+          ) : (
+            <PlayWhite width={16} height={16} color="#2196F3" />
+          )}
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
+
+const PlaylistModal = ({
+  visible,
+  onClose,
+  playlist,
+  currentTrackIndex,
+  onItemPress,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  playlist: AudioData[];
+  currentTrackIndex: number;
+  onItemPress: (index: number) => void;
+}) => {
+  const [internalVisible, setInternalVisible] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setInternalVisible(true);
+    } else {
+      const timer = setTimeout(() => setInternalVisible(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  if (!internalVisible) return null;
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.playlistModalContainer}>
+          <Text style={styles.playlistTitle}>Плейлист</Text>
+
+          <FlatList
+            data={playlist}
+            keyExtractor={(item, index) => `track-${index}`}
+            renderItem={({ item, index }) => (
+              <PlaylistItem 
+                item={item}
+                index={index}
+                isCurrent={index === currentTrackIndex}
+                isPlaying={false}
+                onPress={() => onItemPress(index)}
+              />
+            )}
+            extraData={currentTrackIndex}
+          />
+
+          <TouchableOpacity 
+            style={styles.closePlaylistButton}
+            onPress={onClose}
+          >
+            <Text style={styles.closePlaylistButtonText}>Закрыть</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
   type Position = {
     latitude: number;
@@ -82,7 +203,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
   const [volume, setVolume] = useState<number>(0);
   const [volumeListenerInitialized, setVolumeListenerInitialized] = useState(false);
   const [containerHeight] = useState<number | 'auto'>('auto');
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [previousVolume, setPreviousVolume] = useState<number>(volume);
   const [parentPosition, setParentPosition] = useState<{ lat: number; lon: number } | null>(null);
   const myInstance = useMemo(() => new ClassTimer(), []);
@@ -98,6 +219,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
   const [currentAudioId, setCurrentAudioId] = useState<string | null>(null);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
   const [playlist, setPlaylist] = useState<AudioData[]>([]);
+  const animatedHeight = useRef(new Animated.Value(500)).current;
 
   const playCurrentTrack = useCallback(async () => {
     if (playlist.length === 0 || currentTrackIndex >= playlist.length) return;
@@ -119,7 +241,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
       const newItem = await saveAudioToHistory({
         path: currentTrack.path,
         text: currentTrack.text,
-        title: currentTrack.title
+        title: currentTrack.title,
       });
 
       setCurrentAudioId(newItem.id);
@@ -230,7 +352,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
           const newAudioItem: AudioData = {
             path: filePath,
             text: data.text || 'Описание отсутствует',
-            title: data.title || 'Без названия'
+            title: data.title || 'Без названия',
           };
 
           setPlaylist(prevPlaylist => {
@@ -584,27 +706,6 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
     setShowTextManually(!showTextManually);
   };
 
-  const GenerateContentSection = () => (
-    <View style={styles.generateContentContainer}>
-      <TouchableOpacity
-        onPress={generateContent}
-        disabled={isLoading}
-        style={styles.generateButton}
-      >
-        <LinearGradient colors={['#2196F3', '#13578D']} style={styles.generateButtonGradient}>
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <AIoutlined width={24} height={24} />
-              <Text style={styles.generateButtonText}>Начать рассказ</Text>
-            </>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    </View>
-  );
-
   const wasPlayingBeforeOpen = useRef(false);
 
   const handleOpenPlaylist = async () => {
@@ -616,10 +717,10 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
         setIsPlaying(false);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
-      
+
       // Затем открываем плейлист
       setShowPlaylistModal(true);
-      
+
     } catch (error) {
       console.error('Ошибка при открытии плейлиста:', error);
     }
@@ -629,112 +730,39 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
     try {
       // Закрываем плейлист
       setShowPlaylistModal(false);
-      
+
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       // Проверяем, было ли аудио на паузе перед открытием плейлиста
       if (wasPlayingBeforeOpen.current) {
         await TrackPlayer.play();
         setIsPlaying(true);
       }
-      
+
     } catch (error) {
       console.error('Ошибка при возобновлении воспроизведения:', error);
     }
   };
 
-  const PlaylistModal = () => {
-    const [internalVisible, setInternalVisible] = useState(false);
-  
-    useEffect(() => {
-      if (showPlaylistModal) {
-        setInternalVisible(true);
-      } else {
-        const timer = setTimeout(() => setInternalVisible(false), 300);
-        return () => clearTimeout(timer);
-      }
-    }, [showPlaylistModal]);
-  
-    const handleItemPress = async (index: number) => {
-      try {
-        setCurrentTrackIndex(index);
-        setShowPlaylistModal(false);
-        await TrackPlayer.reset();
-      } catch (error) {
-        console.error('Ошибка при выборе трека:', error);
-      }
-    };
-  
-    if (!internalVisible) return null;
-  
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showPlaylistModal}
-        onRequestClose={() => setShowPlaylistModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.playlistModalContainer}>
-            <Text style={styles.playlistTitle}>Плейлист</Text>
-            
-            <FlatList
-              data={playlist}
-              keyExtractor={(item, index) => `track-${index}`}
-              renderItem={({ item, index }) => (
-                <PlaylistItem 
-                  item={item}
-                  index={index}
-                  isCurrent={index === currentTrackIndex}
-                  isPlaying={false}
-                  onPress={() => handleItemPress(index)}
-                />
-              )}
-              extraData={currentTrackIndex}
-            />
-            
-            <TouchableOpacity 
-              style={styles.closePlaylistButton}
-              onPress={handleClosePlaylist}
-            >
-              <Text style={styles.closePlaylistButtonText}>Закрыть</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    );
+  const handleItemPress = async (index: number) => {
+    try {
+      setCurrentTrackIndex(index);
+      setShowPlaylistModal(false);
+      await TrackPlayer.reset();
+    } catch (error) {
+      console.error('Ошибка при выборе трека:', error);
+    }
   };
 
-  const PlaylistItem = React.memo(({ item, index, isCurrent, isPlaying, onPress }: {
-    item: AudioData;
-    index: number;
-    isCurrent: boolean;
-    isPlaying: boolean;
-    onPress: () => void;
-  }) => {
-    return (
-      <TouchableOpacity 
-        style={[
-          styles.playlistItem,
-          isCurrent && styles.currentTrackItem
-        ]}
-        onPress={onPress}
-      >
-        <Text style={styles.playlistItemText}>
-          {item.title || `Трек ${index + 1}`}
-        </Text>
-        {isCurrent && (
-          <View style={styles.playingIndicator}>
-            {isPlaying ? (
-              <PauseWhite width={16} height={16} color="#2196F3" />
-            ) : (
-              <PlayWhite width={16} height={16} color="#2196F3" />
-            )}
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  });
+  const toggleCollapse = () => {
+    const toValue = isCollapsed ? 500 : 80;
+    Animated.timing(animatedHeight, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    setIsCollapsed(!isCollapsed);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -744,40 +772,49 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
             <Map onPositionChange={handlePositionUpdate}/>
           </View>
 
-          <TouchableOpacity 
-            style={styles.playlistButton}
-            onPress={handleOpenPlaylist}
-          >
-            <Text style={styles.playlistButtonText}>Плейлист</Text>
-          </TouchableOpacity>
-
-          {hasContent && (
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                setHasContent(false);
-                setAudioText('');
-                setAudioTextTitle('');
-                TrackPlayer.reset();
-                setIsPlaying(false);
-                stopTracking();
-              }}
-            >
-              <Text style={styles.backButtonText}>Назад</Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoText}>VERBA</Text>
+            <Text style={styles.logoSubtext}>Аудиогид</Text>
+          </View>
 
           {!hasContent ? (
-            <GenerateContentSection />
+            <GenerateContentSection onPress={generateContent} isLoading={isLoading} />
           ) : (
-            <>
-              {isExpanded ? (
-                <View style={[styles.bottomContainer, { height: containerHeight }]}>
+            <Animated.View style={[styles.bottomContainer, { maxHeight: animatedHeight }]}>
+              <View style={styles.playerTopRow}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => {
+                    setHasContent(false);
+                    setAudioText('');
+                    setAudioTextTitle('');
+                    setPlaylist([]);
+                    setCurrentTrackIndex(0);
+                    setCurrentAudioId(null);
+                    setIsTrackEnded(false);
+                    setIsPlaying(false);
+                    setIsGeneratingNewAudio(false);
+                    TrackPlayer.reset();
+                    stopTracking();
+                  }}
+                >
+                  <ArrowBack width={20} height={20} color="#2E7D32" />
+                  <Text style={styles.topButtonText}>Назад</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={toggleCollapse}>
+                  {isCollapsed ? (
+                    <ChevronUp width={24} height={24} color={theme.colors.text} />
+                  ) : (
+                    <ChevronDown width={24} height={24} color={theme.colors.text} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {!isCollapsed && (
+                <>
                   {showTextManually && audioText ? (
                     <View style={styles.textContentContainer}>
-                      <View style={styles.swipeElement}>
-                        <Line width={24} height={24} color={theme.colors.text} />
-                      </View>
                       <View style={styles.textContentMainContainer}>
                         <View style={styles.textContentTopContainer}>
                           <Text style={styles.textContentTitle}>{audioTextTitle}</Text>
@@ -785,7 +822,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                             <ShowText width={24} height={24} color={theme.colors.text} />
                           </TouchableOpacity>
                         </View>
-                        <View style={{flexGrow: 1}}>
+                        <View style={{ flexGrow: 1 }}>
                           <ScrollView
                             style={styles.textScrollView}
                             showsVerticalScrollIndicator={false}
@@ -798,9 +835,6 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                     </View>
                   ) : (
                     <>
-                      <View style={styles.swipeElement}>
-                        <Line width={24} height={24} color={theme.colors.text} />
-                      </View>
                       <View style={styles.bottomSubTopContainerExpanded}>
                         <Text style={styles.timeText}>{formatTime(progress.position)}</Text>
                         <Slider
@@ -809,39 +843,39 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                           maximumValue={progress.duration}
                           value={progress.position}
                           onSlidingComplete={seekAudio}
-                          minimumTrackTintColor="#2196F3"
-                          maximumTrackTintColor="#13578D"
-                          thumbTintColor="#2196F3"
+                          minimumTrackTintColor="#2E7D32"
+                          maximumTrackTintColor="#1B5E20"
+                          thumbTintColor="#2E7D32"
                         />
                         <Text style={styles.timeText}>{formatTime(progress.duration)}</Text>
                       </View>
                       <View style={styles.bottomSubMidContainerExpanded}>
                         <TouchableOpacity onPress={moveToStart}>
-                          <Previous width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
+                          <Previous width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={backward15}>
-                          <Minus15 width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
+                          <Minus15 width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.playPauseButtonSubContainer} onPress={playPauseAudio} disabled={isGeneratingNewAudio}>
-                          <LinearGradient colors={['#2196F3', '#13578D']} style={styles.playPauseButtonContainer}>
+                          <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.playPauseButtonContainer}>
                             {isGeneratingNewAudio ? (
-                              <ActivityIndicator size="large" color="#2196F3" />
+                              <ActivityIndicator size="large" color="#FFFFFF" />
                             ) : (
-                              <LinearGradient colors={['#2196F3', '#13578D']} style={styles.playPauseButtonContainer}>
+                              <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.playPauseButtonContainer}>
                                 {isPlaying && !isTrackEnded ? (
-                                  <PauseWhite width={24} height={24} color={theme.colors.text} />
+                                  <PauseWhite width={24} height={24} color="#FFFFFF" />
                                 ) : (
-                                  <PlayWhite width={24} height={24} color={theme.colors.text} />
+                                  <PlayWhite width={24} height={24} color="#FFFFFF" />
                                 )}
                               </LinearGradient>
                             )}
                           </LinearGradient>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={forward15}>
-                          <Plus15 width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
+                          <Plus15 width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={moveToEnd}>
-                          <Next width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
+                          <Next width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
                         </TouchableOpacity>
                       </View>
                       <View style={styles.bottomSubBotContainerExpanded}>
@@ -850,7 +884,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                             <Like
                               width={24}
                               height={24}
-                              color={isAudioFavorite ? theme.colors.primary : (isPlaying ? theme.colors.text : theme.colors.text2)}
+                              color={isAudioFavorite ? theme.colors.primary : (isPlaying ? '#2E7D32' : '#1B5E20')}
                               fill={isAudioFavorite ? theme.colors.primary : 'none'}
                             />
                           </TouchableOpacity>
@@ -858,12 +892,19 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                             <Settings width={24} height={24} color={theme.colors.text} />
                           </TouchableOpacity>
                         </View>
+
+                        <View style={styles.playlistContainer}>
+                          <TouchableOpacity onPress={handleOpenPlaylist}>
+                            <PlaylistIcon width={32} height={32} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
+                          </TouchableOpacity>
+                        </View>
+
                         <View style={styles.bottomSubBotContainerRightExpanded}>
                           <TouchableOpacity onPress={textDisplayManually}>
                             <ShowText width={24} height={24} color={theme.colors.text} />
                           </TouchableOpacity>
                           <TouchableOpacity>
-                            <Download width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
+                            <Download width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -877,9 +918,9 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                           maximumValue={1}
                           value={volume}
                           onValueChange={volumeChange}
-                          minimumTrackTintColor="#2196F3"
-                          maximumTrackTintColor="#13578D"
-                          thumbTintColor="#2196F3"
+                          minimumTrackTintColor="#2E7D32"
+                          maximumTrackTintColor="#1B5E20"
+                          thumbTintColor="#2E7D32"
                         />
                         <TouchableOpacity onPress={unmuteVolume}>
                           <VolumeOn width={24} height={24} color={theme.colors.text} />
@@ -887,102 +928,18 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                       </View>
                     </>
                   )}
-                </View>
-              ) : (
-                <View style={[styles.bottomContainer, { height: containerHeight }]}>
-                  <View style={styles.swipeElement}>
-                    <Line width={24} height={24} color={theme.colors.text} />
-                  </View>
-                  <View style={styles.bottomSubTopContainerExpanded}>
-                    <Text style={styles.timeText}>{formatTime(progress.position)}</Text>
-                    <Slider
-                      style={styles.sliderTrack}
-                      minimumValue={0}
-                      maximumValue={progress.duration}
-                      value={progress.position}
-                      onSlidingComplete={seekAudio}
-                      minimumTrackTintColor="#2196F3"
-                      maximumTrackTintColor="#13578D"
-                      thumbTintColor="#2196F3"
-                    />
-                    <Text style={styles.timeText}>{formatTime(progress.duration)}</Text>
-                  </View>
-                  <View style={styles.bottomSubMidContainerExpanded}>
-                    <TouchableOpacity onPress={moveToStart}>
-                      <Previous width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={backward15}>
-                      <Minus15 width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.playPauseButtonSubContainer} onPress={playPauseAudio} disabled={isGeneratingNewAudio}>
-                      <LinearGradient colors={['#2196F3', '#13578D']} style={styles.playPauseButtonContainer}>
-                        {isGeneratingNewAudio ? (
-                          <ActivityIndicator size="large" color="#2196F3" />
-                        ) : (
-                          <LinearGradient colors={['#2196F3', '#13578D']} style={styles.playPauseButtonContainer}>
-                            {isPlaying && !isTrackEnded ? (
-                              <PauseWhite width={24} height={24} color={theme.colors.text} />
-                            ) : (
-                              <PlayWhite width={24} height={24} color={theme.colors.text} />
-                            )}
-                          </LinearGradient>
-                        )}
-                      </LinearGradient>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={forward15}>
-                      <Plus15 width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={moveToEnd}>
-                      <Next width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.bottomSubBotContainerExpanded}>
-                    <View style={styles.bottomSubBotContainerLeftExpanded}>
-                      <TouchableOpacity onPress={toggleFavorite}>
-                        <Like
-                          width={24}
-                          height={24}
-                          color={isAudioFavorite ? theme.colors.primary : (isPlaying ? theme.colors.text : theme.colors.text2)}
-                          fill={isAudioFavorite ? theme.colors.primary : 'none'}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity>
-                        <Settings width={24} height={24} color={theme.colors.text} />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.bottomSubBotContainerRightExpanded}>
-                      <TouchableOpacity onPress={textDisplayManually}>
-                        <ShowText width={24} height={24} color={theme.colors.text} />
-                      </TouchableOpacity>
-                      <TouchableOpacity>
-                        <Download width={24} height={24} color={isPlaying ? theme.colors.text : theme.colors.text2} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <View style={styles.sliderVolumeContainer}>
-                    <TouchableOpacity onPress={muteVolume}>
-                      <VolumeOff width={24} height={24} color={theme.colors.text} />
-                    </TouchableOpacity>
-                    <Slider
-                      style={styles.sliderVolume}
-                      minimumValue={0}
-                      maximumValue={1}
-                      value={volume}
-                      onValueChange={volumeChange}
-                      minimumTrackTintColor="#2196F3"
-                      maximumTrackTintColor="#13578D"
-                      thumbTintColor="#2196F3"
-                    />
-                    <TouchableOpacity onPress={unmuteVolume}>
-                      <VolumeOn width={24} height={24} color={theme.colors.text} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                </>
               )}
-            </>
+            </Animated.View>
           )}
-          
-          <PlaylistModal />
+
+          <PlaylistModal
+            visible={showPlaylistModal}
+            onClose={handleClosePlaylist}
+            playlist={playlist}
+            currentTrackIndex={currentTrackIndex}
+            onItemPress={handleItemPress}
+          />
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </SafeAreaView>
@@ -1007,16 +964,40 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingLeft: 16,
     paddingRight: 16,
-    backgroundColor: theme.colors.background,
+    // backgroundColor: theme.colors.background,
+    backgroundColor: '#F1E8D9',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    minHeight: 80,
-    maxHeight: 410,
+    // minHeight: 80,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  playerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 16,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 0,
+  },
+  topButtonText: {
+    color: '#2E7D32',
+    fontSize: 16,
+    fontWeight: '600',
   },
   swipeElement: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 10,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 0,
+    zIndex: 1,
   },
   textContentContainer: {
     flex: 1,
@@ -1061,8 +1042,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 20,
+    marginBottom: 20,
+    marginTop: 10,
   },
   sliderVolume: {
     flex: 1,
@@ -1072,7 +1053,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   sliderTrack: {
     flex: 1,
@@ -1080,8 +1061,9 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 14,
-    color: '#000',
+    color: '#2E7D32',
     textAlign: 'center',
+    fontWeight: '500',
   },
   bottomSubMidContainerExpanded: {
     flexDirection: 'row',
@@ -1098,6 +1080,11 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     marginLeft: 12,
     marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   playPauseButtonSubContainer: {
     zIndex: 50,
@@ -1109,7 +1096,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: 13,
     paddingRight: 13,
-    marginTop: 16,
+    marginTop: 10,
   },
   bottomSubBotContainerLeftExpanded: {
     flexDirection: 'row',
@@ -1118,6 +1105,11 @@ const styles = StyleSheet.create({
   bottomSubBotContainerRightExpanded: {
     flexDirection: 'row',
     gap: 40,
+  },
+  playlistContainer: {
+    marginTop: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   generateContentContainer: {
     position: 'absolute',
@@ -1132,7 +1124,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   generateButtonGradient: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#2E7D32',
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 20,
@@ -1140,45 +1132,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   generateButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  backButton: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    zIndex: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  topButtonGradient: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderRadius: 20,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2196F3',
-  },
-  backButtonText: {
-    color: '#2196F3',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  playlistButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    zIndex: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#2196F3',
-  },
-  playlistButtonText: {
-    color: '#2196F3',
-    fontSize: 16,
-    fontWeight: '500',
+    borderColor: '#81C784',
+    flexDirection: 'row',
+    gap: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -1199,7 +1172,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   closePlaylistButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#2E7D32',
     padding: 12,
     borderRadius: 20,
     alignItems: 'center',
@@ -1230,6 +1203,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 20,
     marginLeft: 10,
+  },
+  logoContainer: {
+    position: 'absolute',
+    top: 16,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    // color: '#7D957F',
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  logoSubtext: {
+    fontSize: 16,
+    color: '#1B5E20',
+    marginTop: -4,
   },
 });
 

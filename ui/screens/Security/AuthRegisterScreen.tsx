@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  SafeAreaView,
   TouchableOpacity,
+  View,
 } from 'react-native';
-import { register } from '../../components/Api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import { theme } from '../../../theme';
+import ChevronLeftBlueIcon from '../../../assets/images/icons/chevron-left-blue.svg';
 import EmailIcon from '../../../assets/images/icons/email-icon.svg';
 import LockIcon from '../../../assets/images/icons/lock-icon.svg';
 import ProfileIcon from '../../../assets/images/icons/profile-icon.svg';
-import ChevronLeftBlueIcon from '../../../assets/images/icons/chevron-left-blue.svg';
+import { theme } from '../../../theme';
+import { register } from '../../components/Api';
 
 interface AuthRegisterScreenProps {
   onRegister?: () => void;
@@ -60,7 +59,7 @@ const AuthRegisterScreen: React.FC<AuthRegisterScreenProps> = ({ onRegister, nav
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#2196F3', '#13578D']} style={styles.containerBackground}>
+      <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.containerBackground}>
       </LinearGradient>
       <View style={styles.containerRegister}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Auth')}>
@@ -109,7 +108,7 @@ const AuthRegisterScreen: React.FC<AuthRegisterScreenProps> = ({ onRegister, nav
           />
         </View>
         <TouchableOpacity onPress={!loading ? registerFunc : undefined}>
-          <LinearGradient colors={['#2196F3', '#13578D']} style={styles.buttonRegister}>
+          <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.buttonRegister}>
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -151,13 +150,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   backButtonText: {
-    color: theme.colors.primary,
+    color: '#2E7D32',
     fontSize: 16,
   },
   titleRegister: {
-    color: theme.colors.primary,
+    color: '#2E7D32',
     fontSize: 32,
-    // fontFamily: theme.fonts.bold,
     fontWeight: 600,
     lineHeight: 32,
     marginTop: 30,
@@ -166,8 +164,6 @@ const styles = StyleSheet.create({
     marginTop: 40,
     backgroundColor: '#FFF',
     borderRadius: 20,
-    // paddingTop: 8,
-    // paddingBottom: 8,
     paddingLeft: 12,
     paddingRight: 12,
     flexDirection: 'row',
@@ -177,8 +173,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     backgroundColor: '#FFF',
     borderRadius: 20,
-    // paddingTop: 8,
-    // paddingBottom: 8,
     paddingLeft: 12,
     paddingRight: 12,
     flexDirection: 'row',

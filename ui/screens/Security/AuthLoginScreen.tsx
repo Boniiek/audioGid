@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Alert, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { login } from '../../components/Api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { theme } from '../../../theme';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LockIcon from '../../../assets/images/icons/lock-icon.svg';
 import EmailIcon from '../../../assets/images/icons/email-icon.svg';
 import GoogleIcon from '../../../assets/images/icons/google-icon.svg';
+import LockIcon from '../../../assets/images/icons/lock-icon.svg';
+import { theme } from '../../../theme';
+import { login } from '../../components/Api';
+import VerbaIcon from '../../../assets/images/img/verba-icon.svg';
 
 interface AuthLoginScreenProps {
   onLogin?: (token: string) => void;
@@ -41,61 +42,64 @@ const AuthLoginScreen: React.FC<AuthLoginScreenProps> = ({ onLogin, navigation }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#2196F3', '#13578D']} style={styles.containerBackground}>
-        {/* <View style={styles.mainTitleContainer}>
-          <Text style={styles.mainTitle}>Привет!</Text>
-          <Text style={styles.mainSubTitle}>Добро пожаловать в AI Guide</Text>
-        </View> */}
-      </LinearGradient>
-      <View style={styles.containerLogin}>
-        <Text style={styles.titleLogin}>Вход</Text>
-        <View style={styles.inputEmailContainer}>
-          <EmailIcon width={24} height={24} />
-          <TextInput
-            style={styles.input}
-            placeholder="Введите email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-          />
+      <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.containerBackground}>
+        <View style={styles.mainTitleContainer}>
+          <Text style={styles.mainTitle}>VERBA</Text>
+          <Text style={styles.mainSubTitle}>Аудиогид</Text>
         </View>
-        <View style={styles.inputPasswordContainer}>
-          <LockIcon width={24} height={24} />
-          <TextInput
-            style={styles.input}
-            placeholder="Введите пароль"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+        <View style={styles.verbaIcon}>
+          <VerbaIcon width={160} height={160} />
         </View>
-        <TouchableOpacity style={styles.forgotPasswordContainer}>
-          <Text style={styles.forgotPasswordText}>Не помню пароль</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={!loading ? loginFunc : undefined}>
-          <LinearGradient colors={['#2196F3', '#13578D']} style={styles.buttonLogin}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonLoginText}>Войти</Text>
-          )}
-          </LinearGradient>
-        </TouchableOpacity>
-        <View style={styles.altLoginTitleContainer}>
-          <Text style={styles.altLoginTitle}>Или войдите через</Text>
-        </View>
-        <View style={styles.altLoginContainer}>
-          <TouchableOpacity>
-            <View style={styles.googleLoginContainer}>
-              <GoogleIcon width={32} height={32} />
-            </View>
+        <View style={styles.containerLogin}>
+          <Text style={styles.titleLogin}>Вход</Text>
+          <View style={styles.inputEmailContainer}>
+            <EmailIcon width={24} height={24} />
+            <TextInput
+              style={styles.input}
+              placeholder="Введите email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={styles.inputPasswordContainer}>
+            <LockIcon width={24} height={24} />
+            <TextInput
+              style={styles.input}
+              placeholder="Введите пароль"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
+          <TouchableOpacity style={styles.forgotPasswordContainer}>
+            <Text style={styles.forgotPasswordText}>Не помню пароль</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={!loading ? loginFunc : undefined}>
+            <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.buttonLogin}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonLoginText}>Войти</Text>
+            )}
+            </LinearGradient>
+          </TouchableOpacity>
+          <View style={styles.altLoginTitleContainer}>
+            <Text style={styles.altLoginTitle}>Или войдите через</Text>
+          </View>
+          <View style={styles.altLoginContainer}>
+            <TouchableOpacity>
+              <View style={styles.googleLoginContainer}>
+                <GoogleIcon width={32} height={32} />
+              </View>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.registerTextContainer} onPress={() => navigation.navigate('AuthRegister')}>
+            <Text style={styles.registerText1}>Еще нет аккаунта?</Text>
+            <Text style={styles.registerText2}>Зарегистрироваться</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.registerTextContainer} onPress={() => navigation.navigate('AuthRegister')}>
-          <Text style={styles.registerText1}>Еще нет аккаунта?</Text>
-          <Text style={styles.registerText2}>Зарегистрироваться</Text>
-        </TouchableOpacity>
-      </View>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -107,13 +111,19 @@ const styles = StyleSheet.create({
   },
   containerBackground: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  verbaIcon: {
+    position: 'absolute',
+    top: 10,
+    left: -40,
+    zIndex: 100,
   },
   mainTitleContainer: {
-    position: 'absolute',
-    top: 144,
-    left: 16,
+    // position: 'absolute',
+    top: 50,
     flexDirection: 'column',
+    alignItems: 'center',
+    zIndex: 100,
   },
   mainTitle: {
     color: '#FFF',
@@ -136,7 +146,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
   },
   titleLogin: {
-    color: theme.colors.primary,
+    // color: theme.colors.primary,
+    color: '#2E7D32',
     fontSize: 32,
     // fontFamily: theme.fonts.bold,
     fontWeight: 600,
@@ -179,7 +190,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   forgotPasswordText: {
-    color: theme.colors.primary,
+    // color: theme.colors.primary,
+    color: '#2E7D32',
     fontSize: 14,
     fontWeight: 600,
   },
@@ -236,13 +248,11 @@ const styles = StyleSheet.create({
   },
   registerText1: {
     color: theme.colors.text2,
-    // fontFamily: theme.fonts.bold,
     fontWeight: 600,
     fontSize: 14,
   },
   registerText2: {
-    color: theme.colors.primary,
-    // fontFamily: theme.fonts.bold,
+    color: '#2E7D32',
     fontWeight: 600,
     fontSize: 14,
   },

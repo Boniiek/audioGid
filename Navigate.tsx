@@ -163,12 +163,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     // backgroundColor: theme.colors.background,
-    backgroundColor: '#FFF',
+    // backgroundColor: '#FFF',
+    backgroundColor: '#F1E8D9',
     // opacity: 0.2,
     // borderTopWidth: 1,
     // borderTopColor: theme.colors.text2,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    // borderTopColor: '#EEEEEE',
+    borderTopColor: '#CCC3B2',
   },
   button: {
     flex: 1,
