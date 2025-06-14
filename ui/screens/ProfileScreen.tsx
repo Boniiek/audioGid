@@ -1,13 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
+import LinearGradient from 'react-native-linear-gradient';
 import AddPhotoIcon from '../../assets/images/icons/add-photo-icon.svg';
 import ChevronRight from '../../assets/images/icons/chevron-right-icon.svg';
 import EditIcon from '../../assets/images/icons/edit-icon.svg';
+import { getFavoritesCount, getHistoryCount } from '../../services/AudioService';
 import { theme } from '../../theme';
 import LogoutButton from './Security/LogoutButton';
-import LinearGradient from 'react-native-linear-gradient';
 
 interface ProfileScreenProps {
   navigation: any;
@@ -25,6 +27,21 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
   // const [activeSlide, setActiveSlide] = useState<number>(0);
   // const { width } = useWindowDimensions();
   const [user, setUser] = useState<{username: string; email: string} | null>(null);
+  const [favoritesCount, setFavoritesCount] = useState<number>(0);
+  const [historyCount, setHistoryCount] = useState<number>(0);
+
+  const loadCounts = async () => {
+    try {
+      const [favCount, histCount] = await Promise.all([
+        getFavoritesCount(),
+        getHistoryCount()
+      ]);
+      setFavoritesCount(favCount);
+      setHistoryCount(histCount);
+    } catch (error) {
+      console.error('Ошибка при загрузке счетчиков:', error);
+    }
+  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -35,6 +52,12 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
     };
     loadUser();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadCounts();
+    }, [])
+  );
 
   // const carouselItems: CarouselItem[] = [
   //   { id: 1, imageUrl: 'https://cdn1.flamp.ru/5cfc249baad12b9824c7751ad357724a.jpg' },
@@ -72,7 +95,10 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.containerBackground}>
+      <LinearGradient 
+        colors={['#2E7D32', '#1B5E20', '#0D3B1E']} 
+        style={styles.containerBackground}
+      >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.safeAreaContainer} />
           <View style={styles.header}>
@@ -128,11 +154,25 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
 
           <View style={styles.toolsListContainer}>
             <TouchableOpacity style={styles.listItemFirstContainer} onPress={() => navigation.navigate('History')}>
-              <Text style={styles.listItemText}>История</Text>
+              <View style={styles.listItemLeft}>
+                <Text style={styles.listItemText}>История</Text>
+                {historyCount > 0 && (
+                  <View style={styles.counterContainer}>
+                    <Text style={styles.counterText}>{historyCount}</Text>
+                  </View>
+                )}
+              </View>
               <ChevronRight width={20} height={20} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Favourites')}>
-              <Text style={styles.listItemText}>Избранное</Text>
+              <View style={styles.listItemLeft}>
+                <Text style={styles.listItemText}>Избранное</Text>
+                {favoritesCount > 0 && (
+                  <View style={styles.counterContainer}>
+                    <Text style={styles.counterText}>{favoritesCount}</Text>
+                  </View>
+                )}
+              </View>
               <ChevronRight width={20} height={20} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('Settings')}>
@@ -148,7 +188,10 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
               <ChevronRight width={20} height={20} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.listItemContainer} onPress={() => navigation.navigate('About')}>
-              <Text style={styles.listItemText}>О приложении</Text>
+              <View style={styles.listItemLeft}>
+                <Text style={styles.listItemText}>О приложении</Text>
+                <Text style={styles.versionText}>v1.0.0</Text>
+              </View>
               <ChevronRight width={20} height={20} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.listItemLastContainer} onPress={() => navigation.navigate('PrivacyPolicy')}>
@@ -170,7 +213,6 @@ function ProfileScreen({ navigation, onLogout }: ProfileScreenProps): React.JSX.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F0F7F0',
   },
   containerBackground: {
     flex: 1,
@@ -182,18 +224,16 @@ const styles = StyleSheet.create({
   safeAreaContainer: {
     position: 'absolute',
     top: 0,
-    // backgroundColor: '#F4F4F4',
     height: 44,
     width: '100%',
   },
   header: {
-    backgroundColor: '#F4F4F4',
+    backgroundColor: '#F1E8D9',
     flexDirection: 'column',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 16,
-    // height: 208,
     width: '100%',
     borderBottomRightRadius: 20,
     borderBottomLeftRadius: 20,
@@ -262,7 +302,6 @@ const styles = StyleSheet.create({
   recentlyVisitedContainer: {
     marginLeft: 16,
     marginTop: 20,
-    // marginRight: 16,
   },
   recentlyVisitedTitleContainer: {
     flexDirection: 'row',
@@ -304,7 +343,7 @@ const styles = StyleSheet.create({
   },
   toolsListContainer: {
     width: 382,
-    backgroundColor: '#F4F4F4',
+    backgroundColor: '#F1E8D9',
     borderRadius: 20,
     marginLeft: 16,
     marginRight: 16,
@@ -323,7 +362,7 @@ const styles = StyleSheet.create({
   },
   listItemFirstContainer: {
     borderBottomWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E6D5C3',
     paddingBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -331,9 +370,14 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     paddingTop: 16,
   },
+  listItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   listItemContainer: {
     borderBottomWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E6D5C3',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -355,6 +399,21 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.regular,
     fontWeight: '500',
   },
+  counterContainer: {
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  counterText: {
+    color: '#2E7D32',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  versionText: {
+    color: '#666666',
+    fontSize: 12,
+  },
   bottomContainer: {
     flexDirection: 'column',
     alignContent: 'center',
@@ -363,7 +422,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logoutButton: {
-    color: '#FFFFFF',
+    width: 200,
+    height: 48,
   },
 });
 

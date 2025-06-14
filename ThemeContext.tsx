@@ -16,7 +16,7 @@ const lightTheme: AppTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#2196F3',
+    primary: '#2E7D32',
     background: '#FFFFFF',
     card: '#F8F8F8',
     text: '#000000',
@@ -29,7 +29,7 @@ const darkTheme: AppTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    primary: '#2196F3',
+    primary: '#2E7D32',
     background: '#121212',
     card: '#1E1E1E',
     text: '#FFFFFF',

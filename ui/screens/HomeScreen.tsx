@@ -30,19 +30,14 @@ import AIoutlined from '../../assets/images/icons/ai-outlined-icon.svg';
 import ArrowBack from '../../assets/images/icons/arrow_back.svg';
 import ChevronDown from '../../assets/images/icons/chevron_down.svg';
 import ChevronUp from '../../assets/images/icons/chevron_up.svg';
-import Download from '../../assets/images/icons/download.svg';
 import Like from '../../assets/images/icons/like.svg';
-import Minus15 from '../../assets/images/icons/minus15.svg';
 import Next from '../../assets/images/icons/next.svg';
 import PauseWhite from '../../assets/images/icons/pause-white.svg';
 import PlayWhite from '../../assets/images/icons/play-white.svg';
 import PlaylistIcon from '../../assets/images/icons/playlist.svg';
-import Plus15 from '../../assets/images/icons/plus15.svg';
 import Previous from '../../assets/images/icons/previous.svg';
 import Settings from '../../assets/images/icons/settings.svg';
 import ShowText from '../../assets/images/icons/text-btn.svg';
-import VolumeOff from '../../assets/images/icons/volume_off.svg';
-import VolumeOn from '../../assets/images/icons/volume_on.svg';
 import { addToFavorites, isFavorite, removeFromFavorites, saveAudioToHistory } from '../../services/AudioService.ts';
 import { theme } from '../../theme';
 import Map from '../components/Map';
@@ -179,7 +174,7 @@ const PlaylistModal = ({
             extraData={currentTrackIndex}
           />
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.closePlaylistButton}
             onPress={onClose}
           >
@@ -835,6 +830,9 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                     </View>
                   ) : (
                     <>
+                      <View style={styles.bottomTitleContainer}>
+                        <Text style={styles.bottomTitleText}>{audioTextTitle || 'Без названия'}</Text>
+                      </View>
                       <View style={styles.bottomSubTopContainerExpanded}>
                         <Text style={styles.timeText}>{formatTime(progress.position)}</Text>
                         <Slider
@@ -850,65 +848,66 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                         <Text style={styles.timeText}>{formatTime(progress.duration)}</Text>
                       </View>
                       <View style={styles.bottomSubMidContainerExpanded}>
-                        <TouchableOpacity onPress={moveToStart}>
-                          <Previous width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={backward15}>
-                          <Minus15 width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.playPauseButtonSubContainer} onPress={playPauseAudio} disabled={isGeneratingNewAudio}>
-                          <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.playPauseButtonContainer}>
-                            {isGeneratingNewAudio ? (
-                              <ActivityIndicator size="large" color="#FFFFFF" />
-                            ) : (
-                              <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.playPauseButtonContainer}>
-                                {isPlaying && !isTrackEnded ? (
-                                  <PauseWhite width={24} height={24} color="#FFFFFF" />
-                                ) : (
-                                  <PlayWhite width={24} height={24} color="#FFFFFF" />
-                                )}
-                              </LinearGradient>
-                            )}
-                          </LinearGradient>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={forward15}>
-                          <Plus15 width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={moveToEnd}>
-                          <Next width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.bottomSubBotContainerExpanded}>
                         <View style={styles.bottomSubBotContainerLeftExpanded}>
                           <TouchableOpacity onPress={toggleFavorite}>
                             <Like
                               width={24}
                               height={24}
-                              color={isAudioFavorite ? theme.colors.primary : (isPlaying ? '#2E7D32' : '#1B5E20')}
+                              color={isAudioFavorite ? theme.colors.primary : (isPlaying ? '#2E7D32' : theme.colors.text2)}
                               fill={isAudioFavorite ? theme.colors.primary : 'none'}
                             />
                           </TouchableOpacity>
                           <TouchableOpacity>
-                            <Settings width={24} height={24} color={theme.colors.text} />
+                            <Settings width={24} height={24} color={theme.colors.text2} />
                           </TouchableOpacity>
                         </View>
-
-                        <View style={styles.playlistContainer}>
-                          <TouchableOpacity onPress={handleOpenPlaylist}>
-                            <PlaylistIcon width={32} height={32} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
+                        <View style={styles.playlistNavigation}>
+                          <TouchableOpacity onPress={moveToStart}>
+                            <Previous width={30} height={30} color={isPlaying ? '#2E7D32' : theme.colors.text2} />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.playPauseButtonSubContainer} onPress={playPauseAudio} disabled={isGeneratingNewAudio}>
+                            <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.playPauseButtonContainer}>
+                              {isGeneratingNewAudio ? (
+                                <ActivityIndicator size="large" color="#F1E8D9" />
+                              ) : (
+                                <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.playPauseButtonContainer}>
+                                  {isPlaying && !isTrackEnded ? (
+                                    <PauseWhite width={24} height={24} color="#F1E8D9" />
+                                  ) : (
+                                    <PlayWhite width={24} height={24} color="#F1E8D9" />
+                                  )}
+                                </LinearGradient>
+                              )}
+                            </LinearGradient>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={moveToEnd}>
+                            <Next width={30} height={30} color={isPlaying ? '#2E7D32' : theme.colors.text2} />
                           </TouchableOpacity>
                         </View>
-
                         <View style={styles.bottomSubBotContainerRightExpanded}>
                           <TouchableOpacity onPress={textDisplayManually}>
-                            <ShowText width={24} height={24} color={theme.colors.text} />
+                            <ShowText width={24} height={24} color={theme.colors.text2} />
                           </TouchableOpacity>
-                          <TouchableOpacity>
-                            <Download width={24} height={24} color={isPlaying ? '#2E7D32' : '#1B5E20'} />
-                          </TouchableOpacity>
+                          <View style={styles.playlistContainer}>
+                            <TouchableOpacity onPress={handleOpenPlaylist}>
+                              <PlaylistIcon width={24} height={24} color={isPlaying ? '#2E7D32' : theme.colors.text2} />
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
-                      <View style={styles.sliderVolumeContainer}>
+                      {/* <View style={styles.bottomSubBotContainerExpanded}>
+                        <View style={styles.bottomSubBotContainerLeftExpanded}>
+                          <TouchableOpacity>
+                            <Settings width={30} height={30} color={theme.colors.text2} />
+                          </TouchableOpacity>
+                        </View>
+                        <View style={styles.bottomSubBotContainerRightExpanded}>
+                          <TouchableOpacity onPress={textDisplayManually}>
+                            <ShowText width={30} height={30} color={theme.colors.text2} />
+                          </TouchableOpacity>
+                        </View>
+                      </View> */}
+                      {/* <View style={styles.sliderVolumeContainer}>
                         <TouchableOpacity onPress={muteVolume}>
                           <VolumeOff width={24} height={24} color={theme.colors.text} />
                         </TouchableOpacity>
@@ -925,7 +924,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                         <TouchableOpacity onPress={unmuteVolume}>
                           <VolumeOn width={24} height={24} color={theme.colors.text} />
                         </TouchableOpacity>
-                      </View>
+                      </View> */}
                     </>
                   )}
                 </>
@@ -966,6 +965,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     // backgroundColor: theme.colors.background,
     backgroundColor: '#F1E8D9',
+    // backgroundColor: '#2E7D32',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     // minHeight: 80,
@@ -989,7 +989,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   topButtonText: {
-    color: '#2E7D32',
+    // color: '#2E7D32',
+    color: theme.colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1069,8 +1070,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingLeft: 13,
-    paddingRight: 13,
+    marginBottom: 30,
+    // paddingLeft: 13,
+    // paddingRight: 13,
+  },
+  playlistNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
   },
   playPauseButtonContainer: {
     width: 76,
@@ -1078,13 +1086,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 100,
-    marginLeft: 12,
-    marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 3.84,
+    // elevation: 5,
   },
   playPauseButtonSubContainer: {
     zIndex: 50,
@@ -1092,22 +1098,25 @@ const styles = StyleSheet.create({
   },
   bottomSubBotContainerExpanded: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
     paddingLeft: 13,
     paddingRight: 13,
     marginTop: 10,
+    marginBottom: 20,
   },
   bottomSubBotContainerLeftExpanded: {
     flexDirection: 'row',
-    gap: 40,
+    alignItems: 'center',
+    gap: 20,
   },
   bottomSubBotContainerRightExpanded: {
     flexDirection: 'row',
-    gap: 40,
+    alignItems: 'center',
+    gap: 20,
   },
   playlistContainer: {
-    marginTop: 2,
+    marginTop: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1225,6 +1234,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1B5E20',
     marginTop: -4,
+  },
+  bottomTitleContainer: {
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  bottomTitleText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2E7D32',
+    textAlign: 'center',
   },
 });
 

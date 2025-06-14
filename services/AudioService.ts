@@ -1,7 +1,6 @@
-import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { HistoryItem } from '../types/types';
-import { FavoriteItem } from '../types/types';
+import RNFS from 'react-native-fs';
+import { FavoriteItem, HistoryItem } from '../types/types';
 
 const HISTORY_KEY = '@audio_history';
 
@@ -113,4 +112,14 @@ const HISTORY_KEY = '@audio_history';
   export const isFavorite = async (audioId: string): Promise<boolean> => {
     const favorites = await getFavorites();
     return favorites.some(item => item.audioId === audioId);
+  };
+
+  export const getFavoritesCount = async (): Promise<number> => {
+    const favorites = await getFavorites();
+    return favorites.length;
+  };
+
+  export const getHistoryCount = async (): Promise<number> => {
+    const history = await getAudioHistory();
+    return history.length;
   };

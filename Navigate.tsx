@@ -30,7 +30,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 const MyTabBar: React.FC<any> = ({ state, descriptors, navigation }) => {
-  const { colors } = useTheme();
+  // const { colors } = useTheme();
 
   return (
     <View style={styles.container}>
@@ -51,13 +51,13 @@ const MyTabBar: React.FC<any> = ({ state, descriptors, navigation }) => {
         } else if (route.name === 'Поиск') {
           IconName = isFocused ? SearchIcon : SearchIconOutlined;
         } else if (route.name === 'Профиль') {
-          IconName = isFocused ? ProfileIconOutlined : ProfileIcon;
+          IconName = isFocused ? ProfileIcon : ProfileIconOutlined;
         }
 
         return (
           <View key={route.key} style={styles.button} onTouchStart={onPress}>
             <IconName width={24} height={24} />
-            <Text style={{ color: isFocused ? colors.primary : colors.text }}>
+            <Text style={{ color: isFocused ? theme.colors.primary : theme.colors.text2 }}>
               {label}
             </Text>
           </View>
