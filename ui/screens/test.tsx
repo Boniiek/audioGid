@@ -105,7 +105,7 @@ export class ClassTimer {
         const elementsMap = new Map<number, OverpassElement>();
         result.elements.forEach((element: OverpassElement) => elementsMap.set(element.id, element));
         const centerPoint: Point = { lat: 59.9537667, lon: 30.4121783 };
-        const sortedResults = sortByDistance(result.elements, centerPoint,elementsMap);
+        const sortedResults = sortByDistance(result.elements, centerPoint, elementsMap);
         console.log("места надейны");
         return sortedResults;
       } catch (error) {
@@ -125,7 +125,6 @@ export class ClassTimer {
         area.a[admin_level="6"][boundary=administrative][name];
         out center;
       `;
-      
       const response = await fetch('https://overpass-api.de/api/interpreter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -136,7 +135,7 @@ export class ClassTimer {
       catch (error) {
         console.error('Ошибка при выполнении запроса:', error);
       }
-    }
+    };
     stop(): void {
       console.log(this.timerId);
       if (this.timerId !== null) {
@@ -144,5 +143,4 @@ export class ClassTimer {
         this.timerId = null;
       }
     }
-   
   }

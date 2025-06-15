@@ -31,6 +31,7 @@ import ArrowBack from '../../assets/images/icons/arrow_back.svg';
 import ChevronDown from '../../assets/images/icons/chevron_down.svg';
 import ChevronUp from '../../assets/images/icons/chevron_up.svg';
 import Like from '../../assets/images/icons/like.svg';
+import LikeFilled from '../../assets/images/icons/likeFilled.svg';
 import Next from '../../assets/images/icons/next.svg';
 import PauseWhite from '../../assets/images/icons/pause-white.svg';
 import PlayWhite from '../../assets/images/icons/play-white.svg';
@@ -159,20 +160,22 @@ const PlaylistModal = ({
         <View style={styles.playlistModalContainer}>
           <Text style={styles.playlistTitle}>Плейлист</Text>
 
-          <FlatList
-            data={playlist}
-            keyExtractor={(item, index) => `track-${index}`}
-            renderItem={({ item, index }) => (
-              <PlaylistItem 
-                item={item}
-                index={index}
-                isCurrent={index === currentTrackIndex}
-                isPlaying={false}
-                onPress={() => onItemPress(index)}
-              />
-            )}
-            extraData={currentTrackIndex}
-          />
+          <View style={{ flex: 1 }}>
+            <FlatList
+              data={playlist}
+              keyExtractor={(item, index) => `track-${index}`}
+              renderItem={({ item, index }) => (
+                <PlaylistItem 
+                  item={item}
+                  index={index}
+                  isCurrent={index === currentTrackIndex}
+                  isPlaying={false}
+                  onPress={() => onItemPress(index)}
+                />
+              )}
+              extraData={currentTrackIndex}
+            />
+          </View>
 
           <TouchableOpacity
             style={styles.closePlaylistButton}
@@ -319,7 +322,15 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
         return;
       }
 
-      wsRef.current = new WebSocket('ws://109.172.31.90:8080/ws');
+      const token = await getToken();
+      if (!token) {
+        console.error('Токен не найден');
+        setStatus('Ошибка авторизации: токен не найден');
+        return;
+      }
+
+      wsRef.current = new WebSocket(`ws://109.172.31.90:8080/ws?token=${token}`);
+      // wsRef.current = new WebSocket('ws://109.172.31.90:8080/ws?token=${token}');
 
       wsRef.current.onopen = () => {
         console.log('WebSocket подключен');
@@ -329,6 +340,14 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
       wsRef.current.onclose = (event) => {
         console.log('Код закрытия:', event.code, 'Причина:', event.reason);
         setStatus('WebSocket отключен');
+        
+        // Если соединение закрылось из-за ошибки авторизации, попробуем переподключиться
+        if (event.code === 1006) {
+          setTimeout(() => {
+            console.log('Попытка переподключения...');
+            initWebSocket();
+          }, 5000);
+        }
       };
 
       wsRef.current.onerror = (error) => {
@@ -337,17 +356,44 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
       };
 
       wsRef.current.onmessage = async (event) => {
-        console.log('Получено аудио от сервера');
+        console.log('Получено сообщение от сервера');
         try {
+          if (!event.data) {
+            console.error('Получены пустые данные от сервера');
+            return;
+          }
+
           const data = JSON.parse(event.data);
+          
+          // Проверяем наличие ошибки авторизации
+          if (data.error) {
+            console.error('Ошибка сервера:', data.error);
+            if (data.error.includes('token')) {
+              setStatus('Ошибка авторизации: ' + data.error);
+              wsRef.current?.close();
+            }
+            return;
+          }
+          
+          // Проверяем наличие аудио и деталей
+          if (!data || !data.audio || !data.details) {
+            console.error('Некорректный формат данных или отсутствие аудио/деталей:', data);
+            return;
+          }
 
           const filePath = `${RNFS.DocumentDirectoryPath}/audio_${Date.now()}.mp3`;
-          await RNFS.writeFile(filePath, data.content, 'base64');
+          
+          try {
+            await RNFS.writeFile(filePath, data.audio, 'base64');
+          } catch (writeError) {
+            console.error('Ошибка при записи файла:', writeError);
+            return;
+          }
 
           const newAudioItem: AudioData = {
             path: filePath,
-            text: data.text || 'Описание отсутствует',
-            title: data.title || 'Без названия',
+            text: data.response || 'Описание отсутствует',
+            title: data.details.name || data.details['addr:street'] || 'Без названия',
           };
 
           setPlaylist(prevPlaylist => {
@@ -362,6 +408,9 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
           });
         } catch (error) {
           console.error('Ошибка при обработке аудио:', error);
+          if (error instanceof Error) {
+            console.error('Детали ошибки:', error.message);
+          }
         }
       };
     } catch (error) {
@@ -389,22 +438,22 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
       const checkSendData = await myInstance.fetchData(requestCoords);
 
       if (checkSendData && checkSendData.length > 0) {
+        // Отправляем все места из массива
         const dataToSend = checkSendData[0];
-        // Проверяем структуру данных перед отправкой
-        if (!dataToSend.id || !('lat' in dataToSend) || !('lon' in dataToSend) || !dataToSend.type) {
-          console.error('Некорректная структура данных:', dataToSend);
-          return false;
+        // for (const dataToSend of checkSendData) {
+          if (!dataToSend.id || !('lat' in dataToSend) || !('lon' in dataToSend) || !dataToSend.type) {
+            console.error('Некорректная структура данных:', dataToSend);
+            // continue;
+          // }
         }
-
-        console.log('Отправляем данные:', dataToSend);
-        try {
-          wsRef.current?.send(JSON.stringify(dataToSend));
-          // Ждем подтверждения отправки
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (sendError) {
-          console.error('Ошибка при отправке данных:', sendError);
-          return false;
-        }
+        console.log('Отправляем данные:', checkSendData);
+          try {
+            wsRef.current?.send(JSON.stringify(checkSendData));
+            // Ждем небольшую паузу между отправками
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (sendError) {
+            console.error('Ошибка при отправке данных:', sendError);
+          }
       }
 
       setStatus(`Данные отправлены (${new Date().toLocaleTimeString()})`);
@@ -505,13 +554,23 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
 
   const generateContent = async () => {
     try {
+      // setHasContent(false);
+      // setAudioText('');
+      // setAudioTextTitle('');
+      // setPlaylist([]);
+      // setCurrentTrackIndex(0);
+      // setCurrentAudioId(null);
+      // setIsTrackEnded(false);
+      // setIsPlaying(false);
+      // setIsGeneratingNewAudio(false);
+      // TrackPlayer.reset();
+      // stopTracking();
+
       setIsLoading(true);
       setIsGeneratingNewAudio(true);
 
-      // Инициализируем WebSocket соединение
       await initWebSocket();
 
-      // Запускаем отслеживание местоположения
       await startTracking();
 
       setHasContent(true);
@@ -543,17 +602,12 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
   const playAudio = async () => {
     if (isPlaying) {
       await pauseAudio();
-      stopTracking();
       return;
-    }
-
-    if (isTrackEnded || playlist.length === 0) {
-      await generateContent();
     }
 
     await TrackPlayer.play();
     setIsPlaying(true);
-    startTracking();
+    // startTracking();
   };
 
   const pauseAudio = async (): Promise<void> => {
@@ -777,25 +831,29 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
           ) : (
             <Animated.View style={[styles.bottomContainer, { maxHeight: animatedHeight }]}>
               <View style={styles.playerTopRow}>
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => {
-                    setHasContent(false);
-                    setAudioText('');
-                    setAudioTextTitle('');
-                    setPlaylist([]);
-                    setCurrentTrackIndex(0);
-                    setCurrentAudioId(null);
-                    setIsTrackEnded(false);
-                    setIsPlaying(false);
-                    setIsGeneratingNewAudio(false);
-                    TrackPlayer.reset();
-                    stopTracking();
-                  }}
-                >
-                  <ArrowBack width={20} height={20} color="#2E7D32" />
-                  <Text style={styles.topButtonText}>Назад</Text>
-                </TouchableOpacity>
+                {showTextManually ? (
+                  <View style={{ width: 20, height: 20 }} />
+                ) : (
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => {
+                      setHasContent(false);
+                      setAudioText('');
+                      setAudioTextTitle('');
+                      setPlaylist([]);
+                      setCurrentTrackIndex(0);
+                      setCurrentAudioId(null);
+                      setIsTrackEnded(false);
+                      setIsPlaying(false);
+                      setIsGeneratingNewAudio(false);
+                      TrackPlayer.reset();
+                      stopTracking();
+                    }}
+                  >
+                    <ArrowBack width={20} height={20} color="#2E7D32" />
+                    <Text style={styles.topButtonText}>Назад</Text>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity onPress={toggleCollapse}>
                   {isCollapsed ? (
@@ -812,9 +870,9 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                     <View style={styles.textContentContainer}>
                       <View style={styles.textContentMainContainer}>
                         <View style={styles.textContentTopContainer}>
-                          <Text style={styles.textContentTitle}>{audioTextTitle}</Text>
+                          <Text style={styles.textContentTitle} numberOfLines={1} ellipsizeMode="tail">{audioTextTitle || 'Без названия'}</Text>
                           <TouchableOpacity onPress={textDisplayManually}>
-                            <ShowText width={24} height={24} color={theme.colors.text} />
+                            <ShowText width={24} height={24} color={hasContent ? '#2E7D32' : theme.colors.text2} />
                           </TouchableOpacity>
                         </View>
                         <View style={{ flexGrow: 1 }}>
@@ -830,8 +888,16 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                     </View>
                   ) : (
                     <>
-                      <View style={styles.bottomTitleContainer}>
-                        <Text style={styles.bottomTitleText}>{audioTextTitle || 'Без названия'}</Text>
+                      <View
+                        style={styles.bottomTitleContainer}
+                      >
+                        <Text
+                          style={styles.bottomTitleText}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {audioTextTitle || 'Без названия'}
+                        </Text>
                       </View>
                       <View style={styles.bottomSubTopContainerExpanded}>
                         <Text style={styles.timeText}>{formatTime(progress.position)}</Text>
@@ -850,12 +916,15 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                       <View style={styles.bottomSubMidContainerExpanded}>
                         <View style={styles.bottomSubBotContainerLeftExpanded}>
                           <TouchableOpacity onPress={toggleFavorite}>
-                            <Like
-                              width={24}
-                              height={24}
-                              color={isAudioFavorite ? theme.colors.primary : (isPlaying ? '#2E7D32' : theme.colors.text2)}
-                              fill={isAudioFavorite ? theme.colors.primary : 'none'}
-                            />
+                            {isAudioFavorite ? (
+                              <LikeFilled width={24} height={24} color={theme.colors.text3} />
+                            ) : (
+                              <Like
+                                width={24}
+                                height={24}
+                                color={'#2E7D32'}
+                              />
+                            )}
                           </TouchableOpacity>
                           <TouchableOpacity>
                             <Settings width={24} height={24} color={theme.colors.text2} />
@@ -863,7 +932,7 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                         </View>
                         <View style={styles.playlistNavigation}>
                           <TouchableOpacity onPress={moveToStart}>
-                            <Previous width={30} height={30} color={isPlaying ? '#2E7D32' : theme.colors.text2} />
+                            <Previous width={30} height={30} color={hasContent ? '#2E7D32' : theme.colors.text2} />
                           </TouchableOpacity>
                           <TouchableOpacity style={styles.playPauseButtonSubContainer} onPress={playPauseAudio} disabled={isGeneratingNewAudio}>
                             <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.playPauseButtonContainer}>
@@ -881,50 +950,20 @@ function HomeScreen({ navigation, route }: HomeScreenProps): React.JSX.Element {
                             </LinearGradient>
                           </TouchableOpacity>
                           <TouchableOpacity onPress={moveToEnd}>
-                            <Next width={30} height={30} color={isPlaying ? '#2E7D32' : theme.colors.text2} />
+                            <Next width={30} height={30} color={hasContent ? '#2E7D32' : theme.colors.text2} />
                           </TouchableOpacity>
                         </View>
                         <View style={styles.bottomSubBotContainerRightExpanded}>
                           <TouchableOpacity onPress={textDisplayManually}>
-                            <ShowText width={24} height={24} color={theme.colors.text2} />
+                            <ShowText width={24} height={24} color={hasContent ? '#2E7D32' : theme.colors.text2} />
                           </TouchableOpacity>
                           <View style={styles.playlistContainer}>
                             <TouchableOpacity onPress={handleOpenPlaylist}>
-                              <PlaylistIcon width={24} height={24} color={isPlaying ? '#2E7D32' : theme.colors.text2} />
+                              <PlaylistIcon width={24} height={24} color={hasContent ? '#2E7D32' : theme.colors.text2} />
                             </TouchableOpacity>
                           </View>
                         </View>
                       </View>
-                      {/* <View style={styles.bottomSubBotContainerExpanded}>
-                        <View style={styles.bottomSubBotContainerLeftExpanded}>
-                          <TouchableOpacity>
-                            <Settings width={30} height={30} color={theme.colors.text2} />
-                          </TouchableOpacity>
-                        </View>
-                        <View style={styles.bottomSubBotContainerRightExpanded}>
-                          <TouchableOpacity onPress={textDisplayManually}>
-                            <ShowText width={30} height={30} color={theme.colors.text2} />
-                          </TouchableOpacity>
-                        </View>
-                      </View> */}
-                      {/* <View style={styles.sliderVolumeContainer}>
-                        <TouchableOpacity onPress={muteVolume}>
-                          <VolumeOff width={24} height={24} color={theme.colors.text} />
-                        </TouchableOpacity>
-                        <Slider
-                          style={styles.sliderVolume}
-                          minimumValue={0}
-                          maximumValue={1}
-                          value={volume}
-                          onValueChange={volumeChange}
-                          minimumTrackTintColor="#2E7D32"
-                          maximumTrackTintColor="#1B5E20"
-                          thumbTintColor="#2E7D32"
-                        />
-                        <TouchableOpacity onPress={unmuteVolume}>
-                          <VolumeOn width={24} height={24} color={theme.colors.text} />
-                        </TouchableOpacity>
-                      </View> */}
                     </>
                   )}
                 </>
@@ -1016,6 +1055,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 22,
     color: theme.colors.text,
+    flex: 1,
+    flexShrink: 1,
   },
   textScrollView: {
     zIndex: 100,
@@ -1174,6 +1215,8 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: '80%',
+    flexDirection: 'column',
   },
   playlistTitle: {
     fontSize: 24,
@@ -1238,12 +1281,15 @@ const styles = StyleSheet.create({
   bottomTitleContainer: {
     marginBottom: 16,
     alignItems: 'flex-start',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    height: 24,
   },
   bottomTitleText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#2E7D32',
-    textAlign: 'center',
+    textAlign: 'left',
   },
 });
 
